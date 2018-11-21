@@ -1,0 +1,32 @@
+{
+    "engines": {
+        "composer": "^0.20.2"
+    },
+    "name": "document-manager",
+    "version": "0.0.1",
+    "description": "first approach",
+    "private": true,
+    "scripts": {
+        "lint": "eslint .",
+        "deploy": "scripts/deploy.sh",
+        "start": "composer-rest-server -c admin@document-manager -n always -u true -w true",
+        "restart": "composer network reset -c admin@document-manager"
+    },
+    "keywords": [
+        "composer",
+        "composer-network"
+    ],
+    "author": "obernardovieira",
+    "email": "bernardo@techhq.io",
+    "license": "Apache-2.0",
+    "devDependencies": {
+        "composer-admin": "^0.20.2",
+        "composer-cli": "^0.20.2",
+        "composer-client": "^0.20.2",
+        "composer-common": "^0.20.2",
+        "composer-connector-embedded": "^0.20.2",
+        "composer-rest-server": "^0.20.2",
+        "eslint": "^5.8.0",
+        "mkdirp": "^0.5.1"
+    }
+}

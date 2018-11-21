@@ -1,0 +1,16 @@
+/**
+ * My commodity trading network
+ */
+namespace org.example.mynetwork
+
+asset File identified by fileURL {
+    o String fileURL
+    --> Signer[] signers
+}
+participant Signer identified by username {
+    o String username
+}
+transaction Sign {
+    --> File file
+    --> Signer signer
+}
