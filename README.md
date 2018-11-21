@@ -1,3 +1,1 @@
-# document-manager
-
-first approach
+# hyper-document-manager
