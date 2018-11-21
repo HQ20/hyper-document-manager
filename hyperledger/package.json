@@ -2,15 +2,15 @@
     "engines": {
         "composer": "^0.20.2"
     },
-    "name": "document-manager",
+    "name": "hyper-document-manager",
     "version": "0.0.1",
     "description": "first approach",
     "private": true,
     "scripts": {
         "lint": "eslint .",
         "deploy": "scripts/deploy.sh",
-        "start": "composer-rest-server -c admin@document-manager -n always -u true -w true",
-        "restart": "composer network reset -c admin@document-manager"
+        "start": "composer-rest-server -c admin@hyper-document-manager -n always -u true -w true",
+        "restart": "composer network reset -c admin@hyper-document-manager"
     },
     "keywords": [
         "composer",
