@@ -35,8 +35,8 @@ composer archive create -t dir -n . --archiveFile $project_name.bna
 composer network install --card $peer_admin_card --archiveFile $project_name.bna
 composer network start --networkName $project_name --networkVersion $project_version --networkAdmin admin --networkAdminEnrollSecret adminpw --card $peer_admin_card --file networkadmin.card
 
-card_exists=$(composer network ping --card admin@$project_name)
-if [[ $card_exists == *successfully* ]]
+card_exists=$(composer card list --card admin@$project_name)
+if [[ $card_exists == *userName* ]]
 then
     composer card delete --card admin@$project_name
 fi
