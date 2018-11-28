@@ -4,7 +4,7 @@ import request from 'request';
 const baseUrl = 'http://localhost:3000/';
 const signersEndpoint = 'api/org.example.mynetwork.Signer';
 const fileEndpoint = 'api/org.example.mynetwork.File';
-const signEndoint = 'api/org.example.mynetwork.Sign';
+const signEndpoint = 'api/org.example.mynetwork.Sign';
 
 class App extends Component {
     constructor() {
@@ -18,6 +18,7 @@ class App extends Component {
             existingFileToSign: 'select',
             signNewFileUrl: '',
             userSelectSign: '',
+            newSignerName: '',
         };
 
         this.handleChange = this.handleChange.bind(this);
@@ -57,7 +58,7 @@ class App extends Component {
     loadSignedFiles(signer) {
         const filter = `{"where": {"signer": "resource:org.example.mynetwork.Signer#${signer}"}}`;
         const escapedFilter = encodeURIComponent(filter);
-        request(`${baseUrl + signEndoint}?filter=${escapedFilter}`, (err, response) => {
+        request(`${baseUrl + signEndpoint}?filter=${escapedFilter}`, (err, response) => {
             if (err) {
                 return;
             }
@@ -67,14 +68,13 @@ class App extends Component {
     }
 
     // eslint-disable-next-line class-methods-use-this
-    signFile(signer, fileUrl) {
-        console.log('no', signer, fileUrl);
+    signFile(signerName, fileUrl) {
         request.post({
-            url: baseUrl + signEndoint,
+            url: baseUrl + signEndpoint,
             form: {
                 $class: 'org.example.mynetwork.Sign',
                 file: `resource:org.example.mynetwork.File#${fileUrl}`,
-                signer: `resource:org.example.mynetwork.Signer#${signer}`,
+                signer: `resource:org.example.mynetwork.Signer#${signerName}`,
             },
         }, (err, httpResponse, body) => {
             if (httpResponse.statusCode === 200) {
@@ -88,44 +88,71 @@ class App extends Component {
     }
 
     // eslint-disable-next-line class-methods-use-this
-    async uplaoadFile(signer, fileUrl) {
-        await request.post({
-            url: baseUrl + signEndoint,
+    uploadFile(signerName, fileUrl) {
+        request.post({
+            url: baseUrl + fileEndpoint,
             form: {
                 $class: 'org.example.mynetwork.File',
                 fileURL: fileUrl,
-                signers: [
-                    `resource:org.example.mynetwork.Signer#${signer}`,
-                ],
+                // request extension removes empty arrays! See requests#2740 on github
+                signers: ['not-empty'],
             },
+        }, (err, httpResponse, body) => {
+            if (httpResponse.statusCode === 200) {
+                const jsonObject = JSON.parse(body);
+                if (jsonObject.fileURL.length > 0) {
+                    this.signFile(signerName, fileUrl);
+                }
+            }
+        });
+    }
+
+    // eslint-disable-next-line class-methods-use-this
+    registerNewSigner(signerName) {
+        request.post({
+            url: baseUrl + signersEndpoint,
+            form: {
+                $class: 'org.example.mynetwork.Signer',
+                username: signerName,
+            },
+        }, (err, httpResponse, body) => {
+            if (httpResponse.statusCode === 200) {
+                const jsonObject = JSON.parse(body);
+                if (jsonObject.username.length > 0) {
+                    // eslint-disable-next-line no-undef
+                    window.location.reload();
+                }
+            }
         });
     }
 
     async handleSubmit(event) {
-        const { existingFileToSign, signNewFileUrl, userSelectSign } = this.state;
-        let useFileUrl;
-        if (event.target.name === 'sign_new_file') {
-            await this.uplaoadFile(userSelectSign, useFileUrl);
-            useFileUrl = signNewFileUrl;
-        } else if (event.target.name === 'sign_existing_file') {
-            useFileUrl = existingFileToSign;
+        const {
+            existingFileToSign,
+            signNewFileUrl,
+            userSelectSign,
+            newSignerName,
+        } = this.state;
+        if (event.target.name === 'signNewFile') {
+            this.uploadFile(userSelectSign, signNewFileUrl);
+        } else if (event.target.name === 'signExistingFile') {
+            this.signFile(userSelectSign, existingFileToSign);
+        } else if (event.target.name === 'registerNewUser') {
+            this.registerNewSigner(newSignerName);
         }
-        this.signFile(userSelectSign, useFileUrl);
         event.preventDefault();
     }
 
     handleChange(event) {
-        if (event.target.name === 'user_select_list') {
+        if (event.target.name === 'userSelectList') {
             this.loadSignedFiles(event.target.value);
         } else if (event.target.name === 'userSelectSign') {
             this.setState({ userSelectSign: event.target.value });
             this.loadFiles();
-        } else if (event.target.name === 'action_type') {
+        } else if (event.target.name === 'actionType') {
             this.setState({ signNewFile: (event.target.value === 'new') });
-        } else if (event.target.name === 'signNewFileUrl') {
-            this.setState({ signNewFileUrl: event.target.value });
-        } else if (event.target.name === 'existingFileToSign') {
-            this.setState({ existingFileToSign: event.target.value });
+        } else {
+            this.setState({ [event.target.name]: event.target.value });
         }
         event.preventDefault();
     }
@@ -140,6 +167,7 @@ class App extends Component {
             existingFileToSign,
             signNewFileUrl,
             userSelectSign,
+            newSignerName,
         } = this.state;
         let resultFilesSigned;
         let existingFiles;
@@ -164,9 +192,16 @@ class App extends Component {
         return (
             <div>
                 <fieldset>
+                    <legend>Register new user:</legend>
+                    <form onSubmit={this.handleSubmit} name="registerNewUser">
+                        <input type="text" name="newSignerName" value={newSignerName} onChange={this.handleChange} />
+                        <input type="submit" value="Register" />
+                    </form>
+                </fieldset>
+                <fieldset>
                     <legend>List signed files by user:</legend>
                     Select signer
-                    <select name="user_select_list" onChange={this.handleChange}>
+                    <select name="userSelectList" onChange={this.handleChange}>
                         <option key="select">select</option>
                         {signers.map(signer => (
                             <option key={signer.username} value={signer.username}>
@@ -189,12 +224,12 @@ class App extends Component {
                             </option>
                         ))}
                     </select>
-                    <select hidden={(files === null)} type="text" name="action_type" onChange={this.handleChange}>
+                    <select hidden={(files === null)} type="text" name="actionType" onChange={this.handleChange}>
                         <option key="select" value="select">Select</option>
                         <option key="new" value="new">New</option>
                         <option key="existing" value="existing">Existing</option>
                     </select>
-                    <form hidden={(signNewFile !== true)} name="sign_new_file" onSubmit={this.handleSubmit}>
+                    <form hidden={(signNewFile !== true)} name="signNewFile" onSubmit={this.handleSubmit}>
                         <input
                             type="text"
                             name="signNewFileUrl"
@@ -204,7 +239,7 @@ class App extends Component {
                         />
                         <input type="submit" value="Sign" />
                     </form>
-                    <form hidden={(signNewFile !== false)} name="sign_existing_file" onSubmit={this.handleSubmit}>
+                    <form hidden={(signNewFile !== false)} name="signExistingFile" onSubmit={this.handleSubmit}>
                         <select name="existingFileToSign" value={existingFileToSign} onChange={this.handleChange}>
                             <option key="select" value="select">select</option>
                             {existingFiles}
